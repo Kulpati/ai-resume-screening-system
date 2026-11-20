@@ -2,82 +2,293 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI Resume Screening System</title>
 <style>
-  body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
-  h1 { text-align: center; color: #1f2937; }
-  .card { background: #fff; border-radius: 8px; padding: 16px; margin: 16px auto; max-width: 860px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
-  .card h2 { margin-top: 0; font-size: 18px; color: #111827; }
-  input, textarea { width: 100%; padding: 8px; margin: 6px 0; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
-  button { background: #2563eb; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin: 4px 4px 4px 0; }
-  button:hover { background: #1d4ed8; }
-  button.grey { background: #6b7280; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th, td { border-bottom: 1px solid #e5e7eb; padding: 8px; text-align: left; font-size: 14px; }
-  .msg { font-size: 14px; color: #065f46; min-height: 18px; }
-  .err { color: #b91c1c; }
-  pre { background: #f9fafb; padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 13px; white-space: pre-wrap; }
-  .score { font-weight: bold; }
+  :root{
+    --navy:#0a1931; --navy2:#12295c; --indigo:#4f46e5; --indigo2:#4338ca;
+    --amber:#f59e0b; --bg:#f4f6fb; --card:#ffffff; --ink:#0f172a; --mut:#64748b;
+    --line:#e2e8f0; --green:#16a34a; --red:#dc2626; --radius:14px;
+    --shadow:0 4px 24px rgba(10,25,49,.08);
+  }
+  *{box-sizing:border-box}
+  body{font-family:"Inter","Segoe UI",Arial,sans-serif;background:var(--bg);margin:0;color:var(--ink)}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:10px;font-size:14px;font-weight:600}
+  .btn{background:var(--indigo);color:#fff;padding:10px 18px}
+  .btn:hover{background:var(--indigo2)}
+  .btn.ghost{background:#eef2ff;color:var(--indigo)}
+  .btn.ghost:hover{background:#e0e7ff}
+  .btn.grey{background:#e2e8f0;color:#334155}
+  .btn.grey:hover{background:#cbd5e1}
+  .btn.amber{background:var(--amber);color:#111827}
+  input,textarea{width:100%;padding:11px 12px;margin:5px 0 12px;border:1.5px solid var(--line);border-radius:10px;font-size:14px;font-family:inherit;background:#fbfcfe}
+  input:focus,textarea:focus{outline:none;border-color:var(--indigo);background:#fff;box-shadow:0 0 0 3px rgba(79,70,229,.15)}
+  label{font-size:12px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+  .hidden{display:none!important}
+
+  /* ---------- AUTH ---------- */
+  #authView{min-height:100vh;display:grid;grid-template-columns:1.1fr 1fr}
+  .brandpane{background:linear-gradient(150deg,var(--navy) 0%,var(--navy2) 55%,var(--indigo2) 130%);color:#fff;padding:56px 52px;display:flex;flex-direction:column;justify-content:center}
+  .brandpane .logo{display:flex;align-items:center;gap:12px;margin-bottom:34px}
+  .logomark{width:46px;height:46px;border-radius:12px;background:var(--amber);color:var(--navy);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:19px}
+  .brandpane h1{font-size:34px;line-height:1.15;margin:0 0 12px}
+  .brandpane p{color:#c3d2ee;font-size:15px;line-height:1.55;max-width:440px}
+  .feat{display:flex;gap:12px;margin-top:20px;align-items:flex-start}
+  .feat .ic{width:34px;height:34px;flex:0 0 34px;border-radius:9px;background:rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center}
+  .feat b{display:block;font-size:15px}
+  .feat span{color:#a9bedd;font-size:13px;line-height:1.45}
+  .chips{margin-top:30px;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{border:1px solid rgba(255,255,255,.35);color:#dbe7fb;border-radius:999px;padding:5px 12px;font-size:12px;font-weight:600}
+  .formpane{display:flex;align-items:center;justify-content:center;padding:30px}
+  .authcard{width:100%;max-width:400px;background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:30px}
+  .authcard h2{margin:0 0 4px;font-size:22px;color:var(--navy)}
+  .authcard .sub{color:var(--mut);font-size:13px;margin-bottom:18px}
+  .seg{display:flex;background:#eef2f7;border-radius:11px;padding:4px;margin-bottom:18px}
+  .seg button{flex:1;background:transparent;color:var(--mut);padding:9px}
+  .seg button.on{background:#fff;color:var(--navy);box-shadow:0 1px 4px rgba(0,0,0,.12)}
+  details{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+  summary{cursor:pointer;font-size:13px;color:var(--mut);font-weight:600}
+  .msg{font-size:13.5px;color:var(--green);min-height:18px;margin-top:10px}
+  .msg.err{color:var(--red)}
+
+  /* ---------- APP SHELL ---------- */
+  #appView{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
+  aside{background:var(--navy);color:#dbe7fb;padding:22px 16px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+  aside .logo{display:flex;align-items:center;gap:10px;padding:2px 8px 18px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:14px}
+  aside .logo b{color:#fff;font-size:15px;line-height:1.25}
+  aside .logo small{color:#8fa8cf;font-size:11px}
+  .navitem{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;color:#b9cbe8;font-weight:600;font-size:14px;background:transparent;text-align:left;width:100%}
+  .navitem:hover{background:rgba(255,255,255,.07);color:#fff}
+  .navitem.on{background:var(--indigo);color:#fff}
+  .sidejob{margin-top:auto;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px}
+  .sidejob small{color:#8fa8cf;text-transform:uppercase;font-size:10.5px;letter-spacing:.06em;font-weight:700}
+  .sidejob div{color:#fff;font-weight:700;font-size:14px;margin-top:3px;word-break:break-word}
+  .usercard{display:flex;align-items:center;gap:10px;padding:12px 8px 2px;border-top:1px solid rgba(255,255,255,.12);margin-top:12px}
+  .avatar{width:36px;height:36px;border-radius:50%;background:var(--amber);color:var(--navy);font-weight:800;display:flex;align-items:center;justify-content:center;font-size:14px;flex:0 0 36px}
+  .usercard .em{color:#fff;font-size:13px;font-weight:600;word-break:break-all}
+  main{padding:28px 30px 40px;max-width:1060px;width:100%;margin:0 auto}
+  .pagehead h2{margin:0;font-size:24px;color:var(--navy)}
+  .pagehead p{color:var(--mut);margin:4px 0 20px;font-size:14px}
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px;margin-bottom:18px}
+  .card h3{margin:0 0 14px;font-size:16px;color:var(--navy)}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:18px}
+  .tile{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+  .tile .n{font-size:30px;font-weight:800;color:var(--navy)}
+  .tile .l{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-top:2px}
+  .bar-row{display:grid;grid-template-columns:110px 1fr 34px;align-items:center;gap:10px;margin:9px 0;font-size:13.5px}
+  .bar{height:10px;background:#eef2f7;border-radius:99px;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:99px}
+  .jobcard{border:1.5px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;gap:14px;align-items:center;background:#fff}
+  .jobcard.sel{border-color:var(--indigo);background:#f5f6ff}
+  .jobcard b{font-size:15px}
+  .jobcard p{margin:3px 0 0;color:var(--mut);font-size:13px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .drop{border:2px dashed #c7d2fe;border-radius:12px;padding:22px;text-align:center;background:#f5f6ff;color:var(--mut);font-size:14px}
+  .drop input{max-width:340px;margin:8px auto 0}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut);text-align:left;padding:10px 8px;border-bottom:2px solid var(--line)}
+  td{padding:11px 8px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:middle}
+  tr:hover td{background:#fafbff}
+  .rankmedal{width:30px;height:30px;border-radius:50%;background:#e2e8f0;color:#475569;font-weight:800;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+  .rankmedal.r1{background:#fef3c7;color:#b45309}.rankmedal.r2{background:#e5e7eb;color:#374151}.rankmedal.r3{background:#ffedd5;color:#9a3412}
+  .cand{display:flex;align-items:center;gap:10px}
+  .cand .avatar{width:32px;height:32px;font-size:12px;flex-basis:32px}
+  .scorewrap{display:flex;align-items:center;gap:9px;min-width:150px}
+  .scorebar{flex:1;height:8px;background:#eef2f7;border-radius:99px;overflow:hidden}
+  .scorebar i{display:block;height:100%}
+  .badge{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11.5px;font-weight:700}
+  .badge.hi{background:#dcfce7;color:#166534}.badge.mid{background:#fef3c7;color:#92400e}.badge.lo{background:#fee2e2;color:#991b1b}
+  .empty{border:2px dashed var(--line);border-radius:12px;padding:26px;text-align:center;color:var(--mut);font-size:14px;background:#fbfcfe}
+  .skillchips{display:flex;gap:6px;flex-wrap:wrap}
+  .skillchips .chip{border-color:#c7d2fe;color:var(--indigo);background:#eef2ff}
+
+  /* ---------- DRAWER ---------- */
+  #overlay{position:fixed;inset:0;background:rgba(10,25,49,.5);display:none;z-index:40}
+  #overlay.open{display:block}
+  #drawer{position:fixed;top:0;right:0;height:100vh;width:min(480px,94vw);background:#fff;z-index:41;box-shadow:-8px 0 30px rgba(0,0,0,.2);transform:translateX(105%);transition:transform .25s ease;overflow-y:auto;padding:24px}
+  #drawer.open{transform:translateX(0)}
+  #drawer h3{margin:0 40px 2px 0;color:var(--navy);font-size:19px}
+  #drawer .x{position:absolute;top:16px;right:16px;background:#eef2f7;color:var(--navy);width:34px;height:34px;border-radius:50%;font-size:16px}
+  .kv{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;font-size:14px;margin:14px 0}
+  .kv dt{color:var(--mut);font-weight:600}
+  .kv dd{margin:0}
+  .sect{font-size:12px;font-weight:800;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin:20px 0 8px}
+  #drawer ul{margin:6px 0;padding-left:18px;font-size:14px;line-height:1.55}
+  .gauge{height:12px;background:#eef2f7;border-radius:99px;overflow:hidden}
+  .gauge i{display:block;height:100%;background:linear-gradient(90deg,var(--indigo),#06b6d4)}
+  #toasts{position:fixed;bottom:18px;right:18px;z-index:60;display:flex;flex-direction:column;gap:8px}
+  .toast{background:var(--navy);color:#fff;padding:11px 16px;border-radius:11px;font-size:13.5px;box-shadow:var(--shadow);max-width:340px}
+  .toast.err{background:var(--red)}
+  footer{color:var(--mut);font-size:12px;text-align:center;padding:8px 0 20px}
+  @media(max-width:820px){
+    #authView{grid-template-columns:1fr}
+    .brandpane{display:none}
+    #appView{grid-template-columns:1fr}
+    aside{position:static;height:auto}
+  }
 </style>
 </head>
 <body>
-<h1>AI Resume Screening &amp; Candidate Ranking</h1>
 
-<div class="card">
-  <h2>1. Recruiter Login</h2>
-  <input id="email" type="email" placeholder="Email">
-  <input id="password" type="password" placeholder="Password (min 6 chars)">
-  <button onclick="register()">Register</button>
-  <button onclick="login()">Login</button>
-  <button class="grey" onclick="logout()">Logout</button>
-  <div style="margin-top:10px;">
-    <input id="otp" placeholder="Email OTP (only if OTP is enabled on the server)" style="width:60%;">
-    <button class="grey" onclick="sendOtp()">Send OTP</button>
-    <button class="grey" onclick="verifyOtp()">Verify OTP</button>
+<!-- ================= AUTH ================= -->
+<div id="authView">
+  <div class="brandpane">
+    <div class="logo"><div class="logomark">AI</div><div><b style="font-size:17px;">Resume Screening</b><br><small style="color:#8fa8cf;">by Kulpati Kumawat</small></div></div>
+    <h1>Screen resumes with ML,<br>not guesswork.</h1>
+    <p>Upload a job description and a stack of resumes. Two machine-learning models score, classify and explain every candidate — in seconds.</p>
+    <div class="feat">
+      <div class="ic">📊</div>
+      <div><b>TF-IDF match scoring</b><span>Every resume ranked against the job description with cosine similarity and keyword evidence.</span></div>
+    </div>
+    <div class="feat">
+      <div class="ic">🧠</div>
+      <div><b>Naive Bayes classification</b><span>Each resume auto-classified as Backend, Data, Frontend or DevOps with a confidence score.</span></div>
+    </div>
+    <div class="feat">
+      <div class="ic">💡</div>
+      <div><b>AI insight per candidate</b><span>Strengths with evidence, skill gaps, an ATS readability score and ready interview questions.</span></div>
+    </div>
+    <div class="chips">
+      <span class="chip">FastAPI</span><span class="chip">Pure-Python ML</span><span class="chip">JWT Auth</span><span class="chip">Docker</span><span class="chip">AWS EC2</span>
+    </div>
   </div>
-  <p class="msg" id="authMsg"></p>
+  <div class="formpane">
+    <div class="authcard">
+      <h2 id="authTitle">Welcome back</h2>
+      <div class="sub" id="authSub">Login to your recruiter account.</div>
+      <div class="seg">
+        <button id="segLogin" class="on" onclick="setMode('login')">Login</button>
+        <button id="segRegister" onclick="setMode('register')">Register</button>
+      </div>
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="you@example.com">
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="Minimum 6 characters">
+      <button class="btn" id="authGo" style="width:100%;padding:12px;" onclick="authGo()">Login</button>
+      <details>
+        <summary>Email OTP verification (optional)</summary>
+        <label for="otp" style="margin-top:10px;display:block;">OTP code</label>
+        <input id="otp" placeholder="6-digit code from email">
+        <button class="btn grey" onclick="sendOtp()">Send OTP</button>
+        <button class="btn ghost" onclick="verifyOtp()">Verify OTP</button>
+      </details>
+      <p class="msg" id="authMsg"></p>
+    </div>
+  </div>
 </div>
 
-<div class="card">
-  <h2>2. Create Job</h2>
-  <input id="jobTitle" placeholder="Job title, e.g. Backend Developer">
-  <textarea id="jobDesc" rows="6" placeholder="Paste the full job description here"></textarea>
-  <button onclick="createJob()">Create Job</button>
-  <p class="msg" id="jobMsg"></p>
+<!-- ================= APP ================= -->
+<div id="appView" class="hidden">
+  <aside>
+    <div class="logo">
+      <div class="logomark">AI</div>
+      <div><b>Resume Screening</b><br><small>Recruiter console</small></div>
+    </div>
+    <button class="navitem on" id="navDash" onclick="go('dash')">▦&nbsp; Dashboard</button>
+    <button class="navitem" id="navJobs" onclick="go('jobs')">🗂&nbsp; Jobs</button>
+    <button class="navitem" id="navScreen" onclick="go('screen')">🔎&nbsp; Screening</button>
+    <div class="sidejob"><small>Selected job</small><div id="sideJobName">None selected</div></div>
+    <div class="usercard">
+      <div class="avatar" id="userInitial">?</div>
+      <div style="flex:1;min-width:0;"><div class="em" id="userEmail">—</div><small style="color:#8fa8cf;">Recruiter</small></div>
+      <button class="btn amber" style="padding:7px 12px;" onclick="logout()">Logout</button>
+    </div>
+  </aside>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section id="panelDash">
+      <div class="pagehead"><h2>Dashboard</h2><p>Your screening activity at a glance.</p></div>
+      <div class="tiles">
+        <div class="tile"><div class="n" id="tJobs">–</div><div class="l">Jobs created</div></div>
+        <div class="tile"><div class="n" id="tResumes">–</div><div class="l">Resumes uploaded</div></div>
+        <div class="tile"><div class="n" id="tScreened">–</div><div class="l">Candidates screened</div></div>
+        <div class="tile"><div class="n" id="tAvg">–</div><div class="l">Average match score</div></div>
+      </div>
+      <div class="card">
+        <h3>Verdict distribution</h3>
+        <div id="verdictBars"><p style="color:var(--mut);font-size:14px;">Loading…</p></div>
+      </div>
+      <div class="card">
+        <h3>Resume categories (Naive Bayes)</h3>
+        <div class="skillchips" id="catChips"><span style="color:var(--mut);font-size:14px;">Loading…</span></div>
+      </div>
+    </section>
+
+    <!-- JOBS -->
+    <section id="panelJobs" class="hidden">
+      <div class="pagehead"><h2>Jobs</h2><p>Create a job from its description, then select it for screening.</p></div>
+      <div class="card">
+        <h3>Create a new job</h3>
+        <label for="jobTitle">Job title</label>
+        <input id="jobTitle" placeholder="e.g. Backend Developer">
+        <label for="jobDesc">Full job description</label>
+        <textarea id="jobDesc" rows="7" placeholder="Paste the complete job description — required skills drive the scoring."></textarea>
+        <button class="btn" onclick="createJob()">Create Job</button>
+        <p class="msg" id="jobMsg"></p>
+      </div>
+      <div class="card">
+        <h3>My jobs</h3>
+        <div id="jobList"><div class="empty">No jobs yet. Create your first job above.</div></div>
+      </div>
+    </section>
+
+    <!-- SCREENING -->
+    <section id="panelScreen" class="hidden">
+      <div class="pagehead"><h2>Upload &amp; Screening</h2><p id="curJob">No job selected — pick one in the Jobs section.</p></div>
+      <div class="card">
+        <h3>1 · Upload resumes</h3>
+        <div class="drop">
+          Choose .txt or .pdf resumes (max 2 MB each) — you can select many at once.
+          <input id="files" type="file" multiple accept=".txt,.pdf">
+        </div>
+        <div style="margin-top:12px;"><button class="btn" onclick="uploadResumes()">Upload Resumes</button></div>
+        <p class="msg" id="upMsg"></p>
+      </div>
+      <div class="card">
+        <h3>2 · Rank candidates</h3>
+        <button class="btn" onclick="screen()">Screen &amp; Rank for Selected Job</button>
+        <button class="btn grey" onclick="duplicates()">Check Duplicates</button>
+        <p class="msg" id="screenMsg"></p>
+        <div id="rankWrap" class="hidden">
+          <table>
+            <thead><tr><th>Rank</th><th>Candidate</th><th>Match</th><th>Verdict</th><th>Keywords</th><th></th></tr></thead>
+            <tbody id="rankBody"></tbody>
+          </table>
+        </div>
+        <div id="rankEmpty" class="empty">No ranking yet. Upload resumes and run screening.</div>
+      </div>
+    </section>
+
+    <footer>AI Resume Screening System · FastAPI + TF-IDF + Multinomial Naive Bayes · Deployed on AWS EC2 · API docs at /docs</footer>
+  </main>
 </div>
 
-<div class="card">
-  <h2>3. Upload Resumes (.txt / .pdf, max 2 MB)</h2>
-  <input id="files" type="file" multiple accept=".txt,.pdf">
-  <button onclick="uploadResumes()">Upload</button>
-  <p class="msg" id="upMsg"></p>
+<!-- ================= DRAWER + TOASTS ================= -->
+<div id="overlay" onclick="closeDrawer()"></div>
+<div id="drawer">
+  <button class="x" onclick="closeDrawer()">✕</button>
+  <h3 id="dTitle">Candidate</h3>
+  <div id="dSub" style="color:var(--mut);font-size:13px;"></div>
+  <div id="dBody"></div>
 </div>
-
-<div class="card">
-  <h2>4. Screening &amp; Ranking</h2>
-  <button onclick="screen()">Screen All Resumes</button>
-  <button class="grey" onclick="dashboard()">Dashboard Stats</button>
-  <button class="grey" onclick="duplicates()">Check Duplicates</button>
-  <table id="rankTable" style="display:none;">
-    <thead><tr><th>Rank</th><th>Resume</th><th>Match Score</th><th>Matched</th><th>Missing</th><th>Details</th></tr></thead>
-    <tbody id="rankBody"></tbody>
-  </table>
-  <p class="msg" id="screenMsg"></p>
-</div>
-
-<div class="card" id="detailCard" style="display:none;">
-  <h2>Candidate Detail</h2>
-  <pre id="detail"></pre>
-</div>
+<div id="toasts"></div>
 
 <script>
+const $ = id => document.getElementById(id);
 let token = localStorage.getItem("token") || "";
-let jobId = null;
+let jobId = null, jobTitle = "";
+let mode = "login";
 
+function toast(text, isErr) {
+  const t = document.createElement("div");
+  t.className = "toast" + (isErr ? " err" : "");
+  t.textContent = text;
+  $("toasts").appendChild(t);
+  setTimeout(() => t.remove(), 4200);
+}
 function msg(id, text, isErr) {
-  const el = document.getElementById(id);
-  el.textContent = text;
-  el.className = isErr ? "msg err" : "msg";
+  const el = $(id); if (!el) return;
+  el.textContent = text; el.className = isErr ? "msg err" : "msg";
 }
 function headers(json) {
   const h = {"Authorization": "Bearer " + token};
@@ -90,127 +301,283 @@ async function api(path, options) {
   if (!r.ok) throw new Error(data.detail || ("HTTP " + r.status));
   return data;
 }
+function initials(name) {
+  return (name || "?").trim().split(/\s+/).map(w => w[0]).slice(0, 2).join("").toUpperCase();
+}
+function band(score) { return score >= 70 ? "hi" : (score >= 45 ? "mid" : "lo"); }
+function verdictOf(score) { return score >= 70 ? "Strong" : (score >= 45 ? "Can interview" : "Weak"); }
 
+/* ---------- auth ---------- */
+function setMode(m) {
+  mode = m;
+  $("segLogin").className = m === "login" ? "on" : "";
+  $("segRegister").className = m === "register" ? "on" : "";
+  $("authTitle").textContent = m === "login" ? "Welcome back" : "Create your account";
+  $("authSub").textContent = m === "login" ? "Login to your recruiter account." : "Register, then login to start screening.";
+  $("authGo").textContent = m === "login" ? "Login" : "Register";
+}
+function authGo() { mode === "login" ? login() : register(); }
 async function register() {
   try {
     await api("/auth/register", {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({email: email.value, password: password.value})});
-    msg("authMsg", "Registered. Now login.");
+      body: JSON.stringify({email: $("email").value, password: $("password").value})});
+    msg("authMsg", "Account created. Now login.");
+    setMode("login");
   } catch (e) { msg("authMsg", e.message, true); }
 }
 async function login() {
   try {
     const d = await api("/auth/login", {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({email: email.value, password: password.value})});
+      body: JSON.stringify({email: $("email").value, password: $("password").value})});
     token = d.access_token;
     localStorage.setItem("token", token);
-    msg("authMsg", "Logged in. Token saved.");
+    await showApp();
+    toast("Logged in. Welcome!");
   } catch (e) { msg("authMsg", e.message, true); }
 }
-function logout() { token = ""; localStorage.removeItem("token"); msg("authMsg", "Logged out."); }
+function logout() {
+  token = ""; jobId = null; jobTitle = "";
+  localStorage.removeItem("token");
+  $("appView").classList.add("hidden");
+  $("authView").classList.remove("hidden");
+  msg("authMsg", "Logged out.");
+}
 async function sendOtp() {
   try {
     const d = await api("/auth/send-otp", {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({email: email.value})});
+      body: JSON.stringify({email: $("email").value})});
     msg("authMsg", d.otp_enabled ? "OTP sent to your email." : "OTP is disabled on this server (demo mode).");
   } catch (e) { msg("authMsg", e.message, true); }
 }
 async function verifyOtp() {
   try {
     const d = await api("/auth/verify-otp", {method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({email: email.value, code: otp.value})});
+      body: JSON.stringify({email: $("email").value, code: $("otp").value})});
     msg("authMsg", "Email verified: " + d.email);
   } catch (e) { msg("authMsg", e.message, true); }
 }
+
+/* ---------- shell ---------- */
+async function showApp() {
+  try {
+    const me = await api("/auth/me", {headers: headers(false)});
+    $("userEmail").textContent = me.email;
+    $("userInitial").textContent = initials(me.email);
+  } catch (e) { logout(); return; }
+  $("authView").classList.add("hidden");
+  $("appView").classList.remove("hidden");
+  go("dash");
+  loadJobs();
+}
+function go(p) {
+  for (const n of ["dash", "jobs", "screen"]) {
+    $("panel" + n[0].toUpperCase() + n.slice(1)).classList.toggle("hidden", n !== p);
+    $("nav" + n[0].toUpperCase() + n.slice(1)).className = "navitem" + (n === p ? " on" : "");
+  }
+  if (p === "dash") dashboard();
+}
+
+/* ---------- jobs ---------- */
 async function createJob() {
   try {
     const d = await api("/jobs", {method: "POST", headers: headers(true),
-      body: JSON.stringify({title: jobTitle.value, description: jobDesc.value})});
-    jobId = d.id;
-    msg("jobMsg", "Job created, id = " + jobId);
+      body: JSON.stringify({title: $("jobTitle").value, description: $("jobDesc").value})});
+    msg("jobMsg", "Job created (id " + d.id + ") and selected for screening.");
+    selectJob(d.id, $("jobTitle").value);
+    $("jobTitle").value = ""; $("jobDesc").value = "";
+    loadJobs();
+    toast("Job created and selected.");
   } catch (e) { msg("jobMsg", e.message, true); }
 }
+async function loadJobs() {
+  try {
+    const jobs = await api("/jobs", {headers: headers(false)});
+    const box = $("jobList");
+    if (!jobs.length) { box.innerHTML = "<div class='empty'>No jobs yet. Create your first job above.</div>"; return; }
+    box.innerHTML = "";
+    jobs.forEach(j => {
+      const card = document.createElement("div");
+      card.className = "jobcard" + (j.id === jobId ? " sel" : "");
+      const left = document.createElement("div");
+      const b = document.createElement("b"); b.textContent = j.title;
+      const p = document.createElement("p"); p.textContent = j.description;
+      left.appendChild(b); left.appendChild(p);
+      const btn = document.createElement("button");
+      btn.className = j.id === jobId ? "btn grey" : "btn";
+      btn.textContent = j.id === jobId ? "Selected ✓" : "Select";
+      btn.onclick = () => { selectJob(j.id, j.title); loadJobs(); toast("Selected job: " + j.title); };
+      card.appendChild(left); card.appendChild(btn);
+      box.appendChild(card);
+    });
+  } catch (e) { msg("jobMsg", e.message, true); }
+}
+function selectJob(id, title) {
+  jobId = id; jobTitle = title || "";
+  $("sideJobName").textContent = jobTitle ? jobTitle + " (#" + id + ")" : "None selected";
+  $("curJob").textContent = jobTitle
+    ? "Selected job: " + jobTitle + " (id " + id + ") — uploads are screened against this job."
+    : "No job selected — pick one in the Jobs section.";
+}
+
+/* ---------- screening ---------- */
 async function uploadResumes() {
-  const list = document.getElementById("files").files;
-  if (!list.length) { msg("upMsg", "Choose at least one file.", true); return; }
-  let done = [];
+  const list = $("files").files;
+  if (!list.length) { msg("upMsg", "Choose at least one file first.", true); return; }
+  let lines = [];
   for (const f of list) {
     const fd = new FormData();
     fd.append("file", f);
     try {
       const d = await api("/resumes/upload", {method: "POST", headers: headers(false), body: fd});
-      done.push(f.name + " -> " + d.status + " (id " + d.id + ")");
-    } catch (e) { done.push(f.name + " -> ERROR " + e.message); }
+      lines.push("✓ " + f.name + " → " + d.status);
+    } catch (e) { lines.push("✗ " + f.name + " → " + e.message); }
   }
-  msg("upMsg", done.join(" | "));
+  msg("upMsg", lines.join("  ·  "));
+  toast("Upload finished: " + list.length + " file(s).");
 }
 async function screen() {
-  if (!jobId) { msg("screenMsg", "Create a job first.", true); return; }
+  if (!jobId) { msg("screenMsg", "Select a job first (Jobs section).", true); return; }
   try {
+    msg("screenMsg", "Screening…");
     await api("/jobs/" + jobId + "/screen", {method: "POST", headers: headers(false)});
     const ranking = await api("/jobs/" + jobId + "/ranking", {headers: headers(false)});
-    const body = document.getElementById("rankBody");
+    const body = $("rankBody");
     body.innerHTML = "";
     ranking.forEach((item, i) => {
       const tr = document.createElement("tr");
-      tr.innerHTML = "<td>" + (i + 1) + "</td><td>" + item.filename + "</td>" +
-        "<td class='score'>" + item.score + "</td><td>" + item.matched_keywords.length + "</td><td>" +
-        item.missing_keywords.length + "</td>";
-      const td = document.createElement("td");
-      const b1 = document.createElement("button"); b1.textContent = "Profile + ML + ATS";
-      b1.onclick = () => showProfile(item.resume_id);
-      const b2 = document.createElement("button"); b2.textContent = "AI Insight"; b2.className = "grey";
-      b2.onclick = () => showInsight(item.resume_id);
-      td.appendChild(b1); td.appendChild(b2); tr.appendChild(td);
+      const tdRank = document.createElement("td");
+      const medal = document.createElement("span");
+      medal.className = "rankmedal" + (i < 3 ? " r" + (i + 1) : "");
+      medal.textContent = i + 1;
+      tdRank.appendChild(medal);
+
+      const tdCand = document.createElement("td");
+      const wrap = document.createElement("div"); wrap.className = "cand";
+      const av = document.createElement("div"); av.className = "avatar"; av.textContent = initials(item.filename.replace(/\.[^.]+$/, ""));
+      const fn = document.createElement("span"); fn.textContent = item.filename;
+      wrap.appendChild(av); wrap.appendChild(fn); tdCand.appendChild(wrap);
+
+      const tdScore = document.createElement("td");
+      const sw = document.createElement("div"); sw.className = "scorewrap";
+      const sb = document.createElement("div"); sb.className = "scorebar";
+      const fill = document.createElement("i");
+      fill.style.width = Math.min(100, item.score) + "%";
+      fill.style.background = item.score >= 70 ? "var(--green)" : (item.score >= 45 ? "var(--amber)" : "var(--red)");
+      sb.appendChild(fill);
+      const num = document.createElement("b"); num.textContent = item.score;
+      sw.appendChild(sb); sw.appendChild(num); tdScore.appendChild(sw);
+
+      const tdVerdict = document.createElement("td");
+      const bd = document.createElement("span");
+      bd.className = "badge " + band(item.score);
+      bd.textContent = verdictOf(item.score);
+      tdVerdict.appendChild(bd);
+
+      const tdKw = document.createElement("td");
+      tdKw.textContent = item.matched_keywords.length + " matched · " + item.missing_keywords.length + " missing";
+      tdKw.style.color = "var(--mut)"; tdKw.style.fontSize = "13px";
+
+      const tdAct = document.createElement("td");
+      const b1 = document.createElement("button"); b1.className = "btn ghost"; b1.textContent = "Profile";
+      b1.onclick = () => showProfile(item.resume_id, item.filename);
+      const b2 = document.createElement("button"); b2.className = "btn grey"; b2.textContent = "AI Insight";
+      b2.style.marginLeft = "6px";
+      b2.onclick = () => showInsight(item.resume_id, item.filename);
+      tdAct.appendChild(b1); tdAct.appendChild(b2);
+
+      tr.appendChild(tdRank); tr.appendChild(tdCand); tr.appendChild(tdScore);
+      tr.appendChild(tdVerdict); tr.appendChild(tdKw); tr.appendChild(tdAct);
       body.appendChild(tr);
     });
-    document.getElementById("rankTable").style.display = "table";
-    msg("screenMsg", "Screened " + ranking.length + " resumes.");
-  } catch (e) { msg("screenMsg", e.message, true); }
-}
-async function showProfile(resumeId) {
-  try {
-    const d = await api("/resumes/" + resumeId + "/profile", {headers: headers(false)});
-    showDetail(
-      "PROFILE\nName: " + (d.profile.name || "-") + "\nEmail: " + (d.profile.email || "-") +
-      "\nPhone: " + (d.profile.phone || "-") + "\nEducation: " + (d.profile.education || "-") +
-      "\nExperience (years): " + (d.profile.experience_years ?? "-") +
-      "\nSkills: " + d.profile.skills.join(", ") +
-      "\n\nML CATEGORY (Naive Bayes)\n" + d.ml_category.category + " - confidence " + d.ml_category.confidence + "%" +
-      "\n\nATS READABILITY\nScore: " + d.ats.ats_score + "/100\nTips: " + (d.ats.tips.join(" ") || "None"));
-  } catch (e) { msg("screenMsg", e.message, true); }
-}
-async function showInsight(resumeId) {
-  try {
-    const d = await api("/jobs/" + jobId + "/candidates/" + resumeId + "/ai-insight", {headers: headers(false)});
-    showDetail(
-      "AI INSIGHT\nVerdict: " + d.verdict + "\nScore: " + d.score +
-      "\n\nStrengths:\n" + d.strengths.map(s => "- " + s.skill + " (" + s.context + ")").join("\n") +
-      "\n\nGaps:\n" + (d.gaps.map(g => "- " + g).join("\n") || "None") +
-      "\n\nInterview Questions:\n" + d.interview_questions.map(q => "- " + q).join("\n"));
-  } catch (e) { msg("screenMsg", e.message, true); }
-}
-async function dashboard() {
-  try {
-    const d = await api("/stats/dashboard", {headers: headers(false)});
-    showDetail("DASHBOARD\nJobs: " + d.total_jobs + "\nResumes: " + d.total_resumes +
-      "\nScreened: " + d.total_screened + "\nAverage score: " + d.average_score +
-      "\nVerdicts: " + JSON.stringify(d.verdict_counts) +
-      "\nML categories: " + JSON.stringify(d.category_counts));
+    $("rankWrap").classList.toggle("hidden", !ranking.length);
+    $("rankEmpty").classList.toggle("hidden", !!ranking.length);
+    msg("screenMsg", "Screened " + ranking.length + " resume(s) for \"" + jobTitle + "\".");
   } catch (e) { msg("screenMsg", e.message, true); }
 }
 async function duplicates() {
   try {
     const d = await api("/resumes/duplicates", {headers: headers(false)});
-    showDetail("DUPLICATES\nDuplicate resumes: " + d.duplicate_count + "\nGroups: " + JSON.stringify(d.duplicate_groups, null, 2));
+    openDrawer("Duplicate check", "",
+      "<div class='sect'>Result</div><p style='font-size:14px;'>Duplicate resumes found: <b>" + d.duplicate_count +
+      "</b></p><ul>" + (d.duplicate_groups || []).map(g => "<li>" + esc(JSON.stringify(g)) + "</li>").join("") + "</ul>");
   } catch (e) { msg("screenMsg", e.message, true); }
 }
-function showDetail(text) {
-  document.getElementById("detail").textContent = text;
-  document.getElementById("detailCard").style.display = "block";
-  document.getElementById("detailCard").scrollIntoView({behavior: "smooth"});
+
+/* ---------- drawer: profile & insight ---------- */
+function openDrawer(title, sub, html) {
+  $("dTitle").textContent = title;
+  $("dSub").textContent = sub || "";
+  $("dBody").innerHTML = html;
+  $("overlay").classList.add("open");
+  $("drawer").classList.add("open");
 }
-if (token) msg("authMsg", "Token found from earlier login.");
+function closeDrawer() {
+  $("overlay").classList.remove("open");
+  $("drawer").classList.remove("open");
+}
+function esc(s) { const d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; }
+async function showProfile(resumeId, filename) {
+  try {
+    const d = await api("/resumes/" + resumeId + "/profile", {headers: headers(false)});
+    const p = d.profile;
+    const skills = (p.skills || []).map(s => "<span class='chip'>" + esc(s) + "</span>").join("");
+    openDrawer(filename || "Candidate profile", "Structured profile · ML category · ATS score",
+      "<dl class='kv'>" +
+      "<dt>Name</dt><dd>" + esc(p.name || "—") + "</dd>" +
+      "<dt>Email</dt><dd>" + esc(p.email || "—") + "</dd>" +
+      "<dt>Phone</dt><dd>" + esc(p.phone || "—") + "</dd>" +
+      "<dt>Education</dt><dd>" + esc(p.education || "—") + "</dd>" +
+      "<dt>Experience</dt><dd>" + esc(p.experience_years == null ? "—" : p.experience_years + " years") + "</dd></dl>" +
+      "<div class='sect'>Skills extracted</div><div class='skillchips'>" + (skills || "<span style='color:var(--mut)'>None detected</span>") + "</div>" +
+      "<div class='sect'>ML category — Naive Bayes</div>" +
+      "<p style='font-size:14px;margin:4px 0;'><span class='badge hi' style='font-size:13px;'>" + esc(d.ml_category.category) + "</span> &nbsp;confidence " + d.ml_category.confidence + "%</p>" +
+      "<div class='gauge'><i style='width:" + Math.min(100, d.ml_category.confidence) + "%'></i></div>" +
+      "<div class='sect'>ATS readability — " + d.ats.ats_score + "/100</div>" +
+      "<div class='gauge'><i style='width:" + Math.min(100, d.ats.ats_score) + "%'></i></div>" +
+      "<ul>" + (d.ats.tips || []).map(t => "<li>" + esc(t) + "</li>").join("") + "</ul>");
+  } catch (e) { toast(e.message, true); }
+}
+async function showInsight(resumeId, filename) {
+  try {
+    const d = await api("/jobs/" + jobId + "/candidates/" + resumeId + "/ai-insight", {headers: headers(false)});
+    openDrawer(filename || "Candidate insight", "Rule-based insight on top of the ML scores",
+      "<p style='font-size:15px;margin:12px 0;'><span class='badge " + band(d.score) + "' style='font-size:13px;'>" +
+      esc(d.verdict) + "</span> &nbsp;Match score <b>" + d.score + "</b></p>" +
+      "<div class='sect'>Strengths (with evidence)</div><ul>" +
+      d.strengths.map(s => "<li><b>" + esc(s.skill) + "</b> — " + esc(s.context) + "</li>").join("") + "</ul>" +
+      "<div class='sect'>Gaps</div>" +
+      (d.gaps.length ? "<ul>" + d.gaps.map(g => "<li>" + esc(g) + "</li>").join("") + "</ul>" : "<p style='font-size:14px;'>None — all key skills present.</p>") +
+      "<div class='sect'>Interview questions</div><ol style='font-size:14px;line-height:1.55;padding-left:18px;'>" +
+      d.interview_questions.map(q => "<li>" + esc(q) + "</li>").join("") + "</ol>");
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ---------- dashboard ---------- */
+async function dashboard() {
+  try {
+    const d = await api("/stats/dashboard", {headers: headers(false)});
+    $("tJobs").textContent = d.total_jobs;
+    $("tResumes").textContent = d.total_resumes;
+    $("tScreened").textContent = d.total_screened;
+    $("tAvg").textContent = d.average_score;
+    const vc = d.verdict_counts || {};
+    const total = Math.max(1, (vc.strong || 0) + (vc.can_interview || 0) + (vc.weak || 0));
+    const row = (label, val, color) =>
+      "<div class='bar-row'><span>" + label + "</span><div class='bar'><i style='width:" +
+      Math.round(100 * val / total) + "%;background:" + color + "'></i></div><b>" + val + "</b></div>";
+    $("verdictBars").innerHTML =
+      row("Strong", vc.strong || 0, "var(--green)") +
+      row("Can interview", vc.can_interview || 0, "var(--amber)") +
+      row("Weak", vc.weak || 0, "var(--red)");
+    const cc = d.category_counts || {};
+    $("catChips").innerHTML = Object.keys(cc).length
+      ? Object.entries(cc).map(([k, v]) => "<span class='chip'>" + esc(k) + " · " + v + "</span>").join("")
+      : "<span style='color:var(--mut);font-size:14px;'>No resumes processed yet.</span>";
+  } catch (e) { toast(e.message, true); }
+}
+
+/* ---------- boot ---------- */
+if (token) showApp();
 </script>
 </body>
 </html>
