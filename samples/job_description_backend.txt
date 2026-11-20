@@ -1,0 +1,7 @@
+Backend Developer
+
+We need a backend developer who builds backend services in Python with FastAPI.
+The developer will design REST API endpoints backed by PostgreSQL and SQL.
+Authentication uses JWT authentication. ORM is SQLAlchemy and validation is Pydantic.
+Work includes database design, REST endpoints, testing with Pytest, and deployment with Docker.
+Tools: Git, Linux, Docker. Stack: Python, FastAPI, PostgreSQL, SQL, SQLAlchemy, Pydantic, JWT, Pytest.

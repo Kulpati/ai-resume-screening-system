@@ -1,0 +1,8 @@
+Software Developer Resume - Medium Candidate
+
+Python developer with Python and SQL experience.
+Built a REST API project in college using Python.
+Worked with PostgreSQL database basics and Git.
+Interested in backend development, APIs, and testing.
+Familiar with Linux and basic database design.
+No FastAPI project yet, no Docker, no JWT work mentioned.

@@ -1,0 +1,9 @@
+Backend Developer Resume - Strong Candidate
+
+Backend developer building backend services in Python with FastAPI.
+Built REST API endpoints backed by PostgreSQL and SQL.
+Implemented JWT authentication and authentication flow.
+ORM SQLAlchemy, validation Pydantic, database design, REST endpoints.
+Testing with Pytest, deployment with Docker.
+Tools Git Linux Docker. Stack Python FastAPI PostgreSQL SQL SQLAlchemy Pydantic JWT Pytest.
+Project: FastAPI backend with PostgreSQL database, JWT authentication, Docker deployment, Pytest testing.

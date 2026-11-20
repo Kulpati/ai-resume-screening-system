@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Resume Screening System</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
+  h1 { text-align: center; color: #1f2937; }
+  .card { background: #fff; border-radius: 8px; padding: 16px; margin: 16px auto; max-width: 860px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+  .card h2 { margin-top: 0; font-size: 18px; color: #111827; }
+  input, textarea { width: 100%; padding: 8px; margin: 6px 0; border: 1px solid #d1d5db; border-radius: 6px; box-sizing: border-box; }
+  button { background: #2563eb; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin: 4px 4px 4px 0; }
+  button:hover { background: #1d4ed8; }
+  button.grey { background: #6b7280; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border-bottom: 1px solid #e5e7eb; padding: 8px; text-align: left; font-size: 14px; }
+  .msg { font-size: 14px; color: #065f46; min-height: 18px; }
+  .err { color: #b91c1c; }
+  pre { background: #f9fafb; padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 13px; white-space: pre-wrap; }
+  .score { font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>AI Resume Screening &amp; Candidate Ranking</h1>
+
+<div class="card">
+  <h2>1. Recruiter Login</h2>
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password (min 6 chars)">
+  <button onclick="register()">Register</button>
+  <button onclick="login()">Login</button>
+  <button class="grey" onclick="logout()">Logout</button>
+  <div style="margin-top:10px;">
+    <input id="otp" placeholder="Email OTP (only if OTP is enabled on the server)" style="width:60%;">
+    <button class="grey" onclick="sendOtp()">Send OTP</button>
+    <button class="grey" onclick="verifyOtp()">Verify OTP</button>
+  </div>
+  <p class="msg" id="authMsg"></p>
+</div>
+
+<div class="card">
+  <h2>2. Create Job</h2>
+  <input id="jobTitle" placeholder="Job title, e.g. Backend Developer">
+  <textarea id="jobDesc" rows="6" placeholder="Paste the full job description here"></textarea>
+  <button onclick="createJob()">Create Job</button>
+  <p class="msg" id="jobMsg"></p>
+</div>
+
+<div class="card">
+  <h2>3. Upload Resumes (.txt / .pdf, max 2 MB)</h2>
+  <input id="files" type="file" multiple accept=".txt,.pdf">
+  <button onclick="uploadResumes()">Upload</button>
+  <p class="msg" id="upMsg"></p>
+</div>
+
+<div class="card">
+  <h2>4. Screening &amp; Ranking</h2>
+  <button onclick="screen()">Screen All Resumes</button>
+  <button class="grey" onclick="dashboard()">Dashboard Stats</button>
+  <button class="grey" onclick="duplicates()">Check Duplicates</button>
+  <table id="rankTable" style="display:none;">
+    <thead><tr><th>Rank</th><th>Resume</th><th>Match Score</th><th>Matched</th><th>Missing</th><th>Details</th></tr></thead>
+    <tbody id="rankBody"></tbody>
+  </table>
+  <p class="msg" id="screenMsg"></p>
+</div>
+
+<div class="card" id="detailCard" style="display:none;">
+  <h2>Candidate Detail</h2>
+  <pre id="detail"></pre>
+</div>
+
+<script>
+let token = localStorage.getItem("token") || "";
+let jobId = null;
+
+function msg(id, text, isErr) {
+  const el = document.getElementById(id);
+  el.textContent = text;
+  el.className = isErr ? "msg err" : "msg";
+}
+function headers(json) {
+  const h = {"Authorization": "Bearer " + token};
+  if (json) h["Content-Type"] = "application/json";
+  return h;
+}
+async function api(path, options) {
+  const r = await fetch(path, options);
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || ("HTTP " + r.status));
+  return data;
+}
+
+async function register() {
+  try {
+    await api("/auth/register", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({email: email.value, password: password.value})});
+    msg("authMsg", "Registered. Now login.");
+  } catch (e) { msg("authMsg", e.message, true); }
+}
+async function login() {
+  try {
+    const d = await api("/auth/login", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({email: email.value, password: password.value})});
+    token = d.access_token;
+    localStorage.setItem("token", token);
+    msg("authMsg", "Logged in. Token saved.");
+  } catch (e) { msg("authMsg", e.message, true); }
+}
+function logout() { token = ""; localStorage.removeItem("token"); msg("authMsg", "Logged out."); }
+async function sendOtp() {
+  try {
+    const d = await api("/auth/send-otp", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({email: email.value})});
+    msg("authMsg", d.otp_enabled ? "OTP sent to your email." : "OTP is disabled on this server (demo mode).");
+  } catch (e) { msg("authMsg", e.message, true); }
+}
+async function verifyOtp() {
+  try {
+    const d = await api("/auth/verify-otp", {method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({email: email.value, code: otp.value})});
+    msg("authMsg", "Email verified: " + d.email);
+  } catch (e) { msg("authMsg", e.message, true); }
+}
+async function createJob() {
+  try {
+    const d = await api("/jobs", {method: "POST", headers: headers(true),
+      body: JSON.stringify({title: jobTitle.value, description: jobDesc.value})});
+    jobId = d.id;
+    msg("jobMsg", "Job created, id = " + jobId);
+  } catch (e) { msg("jobMsg", e.message, true); }
+}
+async function uploadResumes() {
+  const list = document.getElementById("files").files;
+  if (!list.length) { msg("upMsg", "Choose at least one file.", true); return; }
+  let done = [];
+  for (const f of list) {
+    const fd = new FormData();
+    fd.append("file", f);
+    try {
+      const d = await api("/resumes/upload", {method: "POST", headers: headers(false), body: fd});
+      done.push(f.name + " -> " + d.status + " (id " + d.id + ")");
+    } catch (e) { done.push(f.name + " -> ERROR " + e.message); }
+  }
+  msg("upMsg", done.join(" | "));
+}
+async function screen() {
+  if (!jobId) { msg("screenMsg", "Create a job first.", true); return; }
+  try {
+    await api("/jobs/" + jobId + "/screen", {method: "POST", headers: headers(false)});
+    const ranking = await api("/jobs/" + jobId + "/ranking", {headers: headers(false)});
+    const body = document.getElementById("rankBody");
+    body.innerHTML = "";
+    ranking.forEach((item, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = "<td>" + (i + 1) + "</td><td>" + item.filename + "</td>" +
+        "<td class='score'>" + item.score + "</td><td>" + item.matched_keywords.length + "</td><td>" +
+        item.missing_keywords.length + "</td>";
+      const td = document.createElement("td");
+      const b1 = document.createElement("button"); b1.textContent = "Profile + ML + ATS";
+      b1.onclick = () => showProfile(item.resume_id);
+      const b2 = document.createElement("button"); b2.textContent = "AI Insight"; b2.className = "grey";
+      b2.onclick = () => showInsight(item.resume_id);
+      td.appendChild(b1); td.appendChild(b2); tr.appendChild(td);
+      body.appendChild(tr);
+    });
+    document.getElementById("rankTable").style.display = "table";
+    msg("screenMsg", "Screened " + ranking.length + " resumes.");
+  } catch (e) { msg("screenMsg", e.message, true); }
+}
+async function showProfile(resumeId) {
+  try {
+    const d = await api("/resumes/" + resumeId + "/profile", {headers: headers(false)});
+    showDetail(
+      "PROFILE\nName: " + (d.profile.name || "-") + "\nEmail: " + (d.profile.email || "-") +
+      "\nPhone: " + (d.profile.phone || "-") + "\nEducation: " + (d.profile.education || "-") +
+      "\nExperience (years): " + (d.profile.experience_years ?? "-") +
+      "\nSkills: " + d.profile.skills.join(", ") +
+      "\n\nML CATEGORY (Naive Bayes)\n" + d.ml_category.category + " - confidence " + d.ml_category.confidence + "%" +
+      "\n\nATS READABILITY\nScore: " + d.ats.ats_score + "/100\nTips: " + (d.ats.tips.join(" ") || "None"));
+  } catch (e) { msg("screenMsg", e.message, true); }
+}
+async function showInsight(resumeId) {
+  try {
+    const d = await api("/jobs/" + jobId + "/candidates/" + resumeId + "/ai-insight", {headers: headers(false)});
+    showDetail(
+      "AI INSIGHT\nVerdict: " + d.verdict + "\nScore: " + d.score +
+      "\n\nStrengths:\n" + d.strengths.map(s => "- " + s.skill + " (" + s.context + ")").join("\n") +
+      "\n\nGaps:\n" + (d.gaps.map(g => "- " + g).join("\n") || "None") +
+      "\n\nInterview Questions:\n" + d.interview_questions.map(q => "- " + q).join("\n"));
+  } catch (e) { msg("screenMsg", e.message, true); }
+}
+async function dashboard() {
+  try {
+    const d = await api("/stats/dashboard", {headers: headers(false)});
+    showDetail("DASHBOARD\nJobs: " + d.total_jobs + "\nResumes: " + d.total_resumes +
+      "\nScreened: " + d.total_screened + "\nAverage score: " + d.average_score +
+      "\nVerdicts: " + JSON.stringify(d.verdict_counts) +
+      "\nML categories: " + JSON.stringify(d.category_counts));
+  } catch (e) { msg("screenMsg", e.message, true); }
+}
+async function duplicates() {
+  try {
+    const d = await api("/resumes/duplicates", {headers: headers(false)});
+    showDetail("DUPLICATES\nDuplicate resumes: " + d.duplicate_count + "\nGroups: " + JSON.stringify(d.duplicate_groups, null, 2));
+  } catch (e) { msg("screenMsg", e.message, true); }
+}
+function showDetail(text) {
+  document.getElementById("detail").textContent = text;
+  document.getElementById("detailCard").style.display = "block";
+  document.getElementById("detailCard").scrollIntoView({behavior: "smooth"});
+}
+if (token) msg("authMsg", "Token found from earlier login.");
+</script>
+</body>
+</html>
